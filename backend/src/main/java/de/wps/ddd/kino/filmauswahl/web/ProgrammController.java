@@ -20,7 +20,13 @@ public class ProgrammController {
 
     @GetMapping()
     public List<Film> holeVorstellungenFuerTag(@RequestParam LocalDate datum,
-                                               @RequestParam(defaultValue = "false") boolean nurKinderfilme) {
-        return programmService.holeVorstellungenFuerTag(datum, nurKinderfilme);
+                                               @RequestParam(defaultValue = "false") boolean nurKinderfilme,
+                                               @RequestParam(required = false) String sprache) {
+        return programmService.holeVorstellungenFuerTag(datum, nurKinderfilme, sprache);
+    }
+
+    @GetMapping("/sprachen")
+    public List<String> holeSprachenFuerTag(@RequestParam LocalDate datum) {
+        return programmService.holeSprachenFuerTag(datum);
     }
 }

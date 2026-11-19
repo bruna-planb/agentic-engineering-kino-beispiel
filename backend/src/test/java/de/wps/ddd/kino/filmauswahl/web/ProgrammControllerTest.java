@@ -52,7 +52,7 @@ class ProgrammControllerTest {
                                 LocalDateTime.parse("2025-03-19T14:30"), saal, "Kinderfilm"),
                         new Vorstellung(2L, UUID.fromString("22222222-2222-2222-2222-222222222222"), 1L,
                                 LocalDateTime.parse("2025-03-19T20:30"), saal, "PrimeTime")));
-        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), false)).thenReturn(List.of(film));
+        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), false, null)).thenReturn(List.of(film));
 
         // act / assert
         mockMvc.perform(get("/api/programm").param("datum", "2025-03-19"))
@@ -70,12 +70,37 @@ class ProgrammControllerTest {
     @Test
     void holeVorstellungenFuerTag_nurKinderfilme_reichtFilterAnServiceWeiter() throws Exception {
         // arrange
-        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true)).thenReturn(List.of());
+        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true, null)).thenReturn(List.of());
 
         // act / assert
         mockMvc.perform(get("/api/programm").param("datum", "2025-03-19").param("nurKinderfilme", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
-        verify(programmService).holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true);
+        verify(programmService).holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true, null);
+    }
+
+    @Test
+    void holeVorstellungenFuerTag_sprache_reichtFilterAnServiceWeiter() throws Exception {
+        // arrange
+        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), false, "englisch")).thenReturn(List.of());
+
+        // act / assert
+        mockMvc.perform(get("/api/programm").param("datum", "2025-03-19").param("sprache", "englisch"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        verify(programmService).holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), false, "englisch");
+    }
+
+    @Test
+    void holeSprachenFuerTag_liefertSprachenAlsListe() throws Exception {
+        // arrange
+        when(programmService.holeSprachenFuerTag(LocalDate.parse("2025-03-19"))).thenReturn(List.of("deutsch", "englisch"));
+
+        // act / assert
+        mockMvc.perform(get("/api/programm/sprachen").param("datum", "2025-03-19"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0]").value("deutsch"))
+                .andExpect(jsonPath("$[1]").value("englisch"));
     }
 }

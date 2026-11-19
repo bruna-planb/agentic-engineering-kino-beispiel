@@ -11,12 +11,19 @@ export class ProgrammService {
 
   private programmUrl: string = '/api/programm';
 
-  public holeProgramm(datum: string, nurKinderfilme: boolean = false): Observable<Film[]> {
+  public holeProgramm(datum: string, nurKinderfilme: boolean = false, sprache?: string): Observable<Film[]> {
     const params: Record<string, string> = {datum: datum};
     if (nurKinderfilme) {
       params['nurKinderfilme'] = 'true';
     }
+    if (sprache) {
+      params['sprache'] = sprache;
+    }
     return this.http.get<Film[]>(this.programmUrl, {params})
+  }
+
+  public holeSprachen(datum: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.programmUrl}/sprachen`, {params: {datum: datum}})
   }
 
 }
