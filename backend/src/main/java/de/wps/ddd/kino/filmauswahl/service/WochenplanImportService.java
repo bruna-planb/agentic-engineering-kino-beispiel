@@ -73,6 +73,7 @@ public class WochenplanImportService {
         vorstellung.setFilmId(film.getId());
         vorstellung.setBeginn(vorstellungDto.beginn());
         vorstellung.setSaal(saal);
+        vorstellung.setKategorie(vorstellungDto.kategorie());
         vorstellungen.save(vorstellung);
     }
 

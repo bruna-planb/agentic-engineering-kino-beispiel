@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,10 +49,10 @@ class ProgrammControllerTest {
                 "Deutsch",
                 List.of(
                         new Vorstellung(1L, UUID.fromString("11111111-1111-1111-1111-111111111111"), 1L,
-                                LocalDateTime.parse("2025-03-19T14:30"), saal),
+                                LocalDateTime.parse("2025-03-19T14:30"), saal, "Kinderfilm"),
                         new Vorstellung(2L, UUID.fromString("22222222-2222-2222-2222-222222222222"), 1L,
-                                LocalDateTime.parse("2025-03-19T20:30"), saal)));
-        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"))).thenReturn(List.of(film));
+                                LocalDateTime.parse("2025-03-19T20:30"), saal, "PrimeTime")));
+        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), false)).thenReturn(List.of(film));
 
         // act / assert
         mockMvc.perform(get("/api/programm").param("datum", "2025-03-19"))
@@ -62,6 +63,19 @@ class ProgrammControllerTest {
                 .andExpect(jsonPath("$[0].fsk").value(12))
                 .andExpect(jsonPath("$[0].vorstellungen.length()").value(2))
                 .andExpect(jsonPath("$[0].vorstellungen[0].saal").value("Großer Saal"))
-                .andExpect(jsonPath("$[0].vorstellungen[0].beginn").value("2025-03-19T14:30:00"));
+                .andExpect(jsonPath("$[0].vorstellungen[0].beginn").value("2025-03-19T14:30:00"))
+                .andExpect(jsonPath("$[0].vorstellungen[0].kategorie").value("Kinderfilm"));
+    }
+
+    @Test
+    void holeVorstellungenFuerTag_nurKinderfilme_reichtFilterAnServiceWeiter() throws Exception {
+        // arrange
+        when(programmService.holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true)).thenReturn(List.of());
+
+        // act / assert
+        mockMvc.perform(get("/api/programm").param("datum", "2025-03-19").param("nurKinderfilme", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        verify(programmService).holeVorstellungenFuerTag(LocalDate.parse("2025-03-19"), true);
     }
 }

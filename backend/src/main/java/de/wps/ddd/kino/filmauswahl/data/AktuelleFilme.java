@@ -13,6 +13,9 @@ public interface AktuelleFilme extends Repository<Film, Long> {
     @Query("select f from Film f join fetch f.vorstellungen v where v.beginn >= :start and v.beginn < :ende")
     List<Film> findeVorstellungenZwischen(LocalDateTime start, LocalDateTime ende);
 
+    @Query("select f from Film f join fetch f.vorstellungen v where v.beginn >= :start and v.beginn < :ende and v.kategorie = :kategorie")
+    List<Film> findeVorstellungenZwischenMitKategorie(LocalDateTime start, LocalDateTime ende, String kategorie);
+
     Optional<Film> findByTitel(String titel);
 
     Film save(Film film);

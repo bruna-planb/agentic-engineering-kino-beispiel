@@ -18,4 +18,5 @@ export interface Vorstellung {
   beginn: string
   preis: number
   saal: string
+  kategorie: string
 }

@@ -43,6 +43,39 @@ class ProgrammServiceIntegrationTest extends IntegrationTestMitWochenplan {
     }
 
     @Test
+    void holeVorstellungenFuerTag_nurKinderfilme_liefertNurKinderfilmVorstellungen() {
+        // arrange
+        var datum = LocalDate.parse("2025-03-19");
+
+        // act
+        var filme = programmService.holeVorstellungenFuerTag(datum, true);
+
+        // assert
+        assertThat(filme).hasSize(1);
+        var film = filme.get(0);
+        assertThat(film.getTitel()).isEqualTo("Guardians of the Lunacy");
+        assertThat(film.getVorstellungen()).hasSize(1);
+        assertThat(film.getVorstellungen().get(0).getBeginn()).isEqualTo("2025-03-19T14:30:00");
+        assertThat(film.getVorstellungen().get(0).getKategorie()).isEqualTo("Kinderfilm");
+    }
+
+    @Test
+    void holeVorstellungenFuerTag_nurKinderfilme_filmMitAuchAnderenVorstellungen_liefertNurKinderfilmVorstellung() {
+        // arrange — Donnerstag: Guardians läuft 14:30 als Kinderfilm und 20:00 als PrimeTime
+        var datum = LocalDate.parse("2025-03-20");
+
+        // act
+        var filme = programmService.holeVorstellungenFuerTag(datum, true);
+
+        // assert
+        assertThat(filme).hasSize(1);
+        assertThat(filme.get(0).getTitel()).isEqualTo("Guardians of the Lunacy");
+        assertThat(filme.get(0).getVorstellungen())
+                .extracting(v -> v.getBeginn().toLocalTime().toString())
+                .containsExactly("14:30");
+    }
+
+    @Test
     void holeVorstellungenFuerTag_keineVorstellungenAmTag_liefertLeereListe() {
         // arrange
         var datum = LocalDate.parse("2000-01-01");

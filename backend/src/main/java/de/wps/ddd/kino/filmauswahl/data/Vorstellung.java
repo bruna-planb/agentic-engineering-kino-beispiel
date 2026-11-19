@@ -40,4 +40,8 @@ public class Vorstellung {
     @ManyToOne
     @JoinColumn(name = "saal_id", nullable = false)
     private Saal saal;
+    /** Vorstellungskategorie aus dem Wochenplan, z. B. {@value #KINDERFILM}. */
+    private String kategorie;
+
+    public static final String KINDERFILM = "Kinderfilm";
 }

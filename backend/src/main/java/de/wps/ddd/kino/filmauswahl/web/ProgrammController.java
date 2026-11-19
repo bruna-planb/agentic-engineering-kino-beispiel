@@ -19,7 +19,8 @@ public class ProgrammController {
     private final ProgrammService programmService;
 
     @GetMapping()
-    public List<Film> holeVorstellungenFuerTag(@RequestParam LocalDate datum) {
-        return programmService.holeVorstellungenFuerTag(datum);
+    public List<Film> holeVorstellungenFuerTag(@RequestParam LocalDate datum,
+                                               @RequestParam(defaultValue = "false") boolean nurKinderfilme) {
+        return programmService.holeVorstellungenFuerTag(datum, nurKinderfilme);
     }
 }
