@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Popcorn – Mockup (Wegwerf)</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --fg:#1d1d1f; --mut:#6b6b70; --line:#d9d7d0; --acc:#b4452a; --ok:#2a7a4b; --warn:#f2b705; --warnbg:#fff6d6; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#17171a; --card:#222226; --fg:#f0efec; --mut:#9a9aa0; --line:#3a3a40; --acc:#e8795c; --ok:#5cc58a; --warn:#f2b705; --warnbg:#3a3318; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.3rem; margin:8px 0 2px; }
+  .sub { color:var(--mut); font-size:.85rem; margin-bottom:12px; }
+  .bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; font-size:.85rem; }
+  .steps { display:flex; gap:4px; margin-bottom:12px; }
+  .steps div { flex:1; height:6px; border-radius:3px; background:var(--line); }
+  .steps div.done { background:var(--ok); } .steps div.cur { background:var(--acc); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:12px; }
+  .card h2 { font-size:1.05rem; margin:0 0 8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .neu { font-size:.7rem; background:var(--acc); color:#fff; border-radius:4px; padding:1px 6px; }
+  label { display:block; margin:8px 0 2px; font-size:.85rem; color:var(--mut); }
+  select, input[type=number] { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); font:inherit; }
+  button { font:inherit; padding:8px 14px; border-radius:6px; border:1px solid var(--line); background:var(--card); color:var(--fg); cursor:pointer; }
+  button.primary { background:var(--acc); color:#fff; border-color:var(--acc); }
+  .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  td { padding:4px 0; } td:last-child { text-align:right; white-space:nowrap; }
+  tr.sum td { border-top:1px solid var(--line); font-weight:600; padding-top:6px; }
+  .q { display:inline-block; background:var(--warn); color:#222; font-weight:700; font-size:.72rem; border-radius:10px; padding:1px 8px; border:0; cursor:pointer; }
+  .qbox { display:none; background:var(--warnbg); border-left:4px solid var(--warn); border-radius:4px; padding:8px 10px; margin-top:8px; font-size:.85rem; }
+  .qbox.show { display:block; }
+  body.hidequ .q, body.hidequ .qbox { display:none !important; }
+  .beleg { border:2px dashed var(--mut); border-radius:8px; padding:12px; margin-top:8px; font-family:ui-monospace,monospace; font-size:.85rem; }
+  .karte { border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:.9rem; }
+  .err { color:var(--acc); font-size:.85rem; margin-top:6px; min-height:1.2em; }
+  .hint { color:var(--mut); font-size:.8rem; }
+  details { font-size:.85rem; margin-top:8px; } summary { cursor:pointer; color:var(--mut); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Popcorn beim Ticketkauf – Mockup</h1>
+  <div class="sub">Wegwerf-Mockup nach docs/anforderungen/popcorn-klaerung.md (Stand 2026-11-20). Kein echter Kauf, keine Daten.</div>
+  <div class="bar">
+    <label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="qtoggle" checked> Offene Fragen anzeigen</label>
+    <button id="restart">Neu starten</button>
+  </div>
+  <div class="steps" id="steps"></div>
+  <div id="view"></div>
+  <details>
+    <summary>Alle offenen Fragen (O9)</summary>
+    <div id="alleq"></div>
+  </details>
+</main>
+
+<script>
+// Offene Fragen aus Abschnitt 2 der Klärung (O8), mit Stelle im Ablauf.
+const OPEN = {
+  O9: "Wer darf an der Kasse Belege einlösen (Rolle, Anmeldung), und welche Scanner-Hardware ist vorhanden (QR oder Barcode)? Geklärt: Beleg wird gescannt und vom System entwertet."
+};
+const MAX = 10;
+const GROESSEN = { klein: 350, mittel: 450, gross: 550 };
+const GROESSE_NAME = { klein: "klein", mittel: "mittel", gross: "groß" };
+const KATEGORIEN = { Standard: 1050, PrimeTime: 1200, Kinderfilm: 850 };
+const LOGE = 200;
+const STEPS = ["Vorstellung", "Kartenanzahl", "Plätze", "Popcorn", "Zahlung", "Karten & Beleg"];
+
+const fmt = c => (c/100).toFixed(2).replace(".", ",") + " €";
+const init = () => ({ step:0, kategorie:"Standard", anzahl:2, platz:"Parkett", popcorn:[], anlauf:1, fehler:"", eingeloest:false, scanMsg:"", scanOk:false });
+let s = init();
+
+function q(id) { // Marker + aufklappbare Box an der Stelle im Ablauf
+  return `<button class="q" data-q="${id}" title="Offene Frage ${id}">? ${id}</button>`;
+}
+function qbox(ids) {
+  return ids.map(id => `<div class="qbox" id="box-${id}"><b>${id}:</b> ${OPEN[id]}</div>`).join("");
+}
+const popcornMenge = () => s.popcorn.reduce((a,p) => a + p.menge, 0);
+const popcornPreis = () => s.popcorn.reduce((a,p) => a + p.menge * GROESSEN[p.groesse], 0);
+const kartenPreis = () => s.anzahl * (KATEGORIEN[s.kategorie] + (s.platz === "Loge" ? LOGE : 0));
+
+function render() {
+  document.getElementById("steps").innerHTML = STEPS.map((n,i) =>
+    `<div class="${i < s.step ? "done" : i === s.step ? "cur" : ""}" title="${n}"></div>`).join("");
+  const v = document.getElementById("view");
+  const nav = (back, label="Weiter", extra="") =>
+    `<div class="row">${back ? '<button data-act="back">Zurück</button>' : ""}<button class="primary" data-act="next">${label}</button>${extra}</div>`;
+  let h = "";
+
+  if (s.step === 0) {
+    h = `<div class="card"><h2>1 · Vorstellung wählen</h2>
+      <label>Vorstellung (Kategorie bestimmt den Kartenpreis)</label>
+      <select id="kat">${Object.keys(KATEGORIEN).map(k => `<option ${k===s.kategorie?"selected":""} value="${k}">Film – ${k} (${fmt(KATEGORIEN[k])})</option>`).join("")}</select>
+      ${nav(false)}</div>`;
+  } else if (s.step === 1) {
+    h = `<div class="card"><h2>2 · Kartenanzahl wählen</h2>
+      <label>Anzahl Karten</label>
+      <input type="number" id="anz" min="1" max="8" value="${s.anzahl}">
+      ${nav(true)}</div>`;
+  } else if (s.step === 2) {
+    h = `<div class="card"><h2>3 · Plätze wählen</h2>
+      <label>Block zusammenhängender Plätze</label>
+      <select id="platz"><option ${s.platz==="Parkett"?"selected":""}>Parkett</option><option ${s.platz==="Loge"?"selected":""}>Loge</option></select>
+      <div class="hint">Loge: +${fmt(LOGE)} je Karte.</div>
+      ${nav(true)}</div>`;
+  } else if (s.step === 3) {
+    const zeilen = s.popcorn.map((p,i) => `<tr><td>${p.menge}× ${GROESSE_NAME[p.groesse]}, ${p.geschmack}</td><td>${fmt(p.menge*GROESSEN[p.groesse])} <button data-del="${i}" title="Entfernen">✕</button></td></tr>`).join("");
+    h = `<div class="card"><h2>4 · Popcorn wählen (optional) <span class="neu">neu</span> </h2>
+      <div class="hint">Höchstens ${MAX} Portionen insgesamt, unabhängig von der Kartenanzahl.</div>
+      <label>Größe</label>
+      <select id="pg">${Object.keys(GROESSEN).map(g => `<option value="${g}">${GROESSE_NAME[g]} (${fmt(GROESSEN[g])})</option>`).join("")}</select>
+      <label>Geschmack</label>
+      <select id="pgs"><option>süß</option><option>salzig</option></select>
+      <label>Menge</label>
+      <input type="number" id="pm" min="1" value="1">
+      <div class="row"><button data-act="add">Hinzufügen</button></div>
+      <div class="err" id="err">${s.fehler}</div>
+      ${zeilen ? `<table>${zeilen}<tr class="sum"><td>Popcorn gesamt (${popcornMenge()} von ${MAX})</td><td>${fmt(popcornPreis())}</td></tr></table>` : `<div class="hint">Noch kein Popcorn gewählt.</div>`}
+      ${nav(true, s.popcorn.length ? "Weiter zur Zahlung" : "Ohne Popcorn weiter")}</div>`;
+  } else if (s.step === 4) {
+    const loge = s.platz === "Loge" ? ` (inkl. Loge ${fmt(LOGE)} je Karte)` : "";
+    const pz = s.popcorn.map(p => `<tr><td>${p.menge}× Popcorn ${GROESSE_NAME[p.groesse]}, ${p.geschmack}</td><td>${fmt(p.menge*GROESSEN[p.groesse])}</td></tr>`).join("");
+    h = `<div class="card"><h2>5 · Kinokarten zahlen </h2>
+      <table>
+        <tr><td>${s.anzahl}× Kinokarte ${s.kategorie}, ${s.platz}${loge}</td><td>${fmt(kartenPreis())}</td></tr>
+        ${pz}
+        <tr class="sum"><td>Gesamtpreis</td><td>${fmt(kartenPreis()+popcornPreis())}</td></tr>
+      </table>
+      <div class="hint">Anlauf ${s.anlauf}. Eine Zahlung für Karten und Popcorn; ein abgelehnter Anlauf lässt die Bestellung unverändert.</div>
+      <div class="row">
+        <button data-act="back">Zurück</button>
+        <button class="primary" data-act="pay">Zahlung erfolgreich (simuliert)</button>
+        <button data-act="reject">Zahlung abgelehnt (simuliert)</button>
+      </div>
+      <div class="err">${s.fehler}</div></div>`;
+  } else {
+    const n = s.anzahl;
+    const karten = Array.from({length:n}, (_,i) => `<div class="karte">Kinokarte ${i+1}/${n} · Film – ${s.kategorie} · ${s.platz} · Reihe 5, Platz ${i+4}</div>`).join("");
+    const beleg = s.popcorn.length ? `<div class="beleg">ABHOLBELEG – Popcorn (Kiosk)<br>Auftragsnummer: 7f3a-demo<br>Code: ▚▞▚▞ 7F3A-DEMO-01<br>${s.popcorn.map(p => `${p.menge}× ${GROESSE_NAME[p.groesse]}, ${p.geschmack}`).join("<br>")}<br>Gesamt: ${fmt(popcornPreis())}<br>Gültig am Vorstellungstag, einmal einlösbar, vorzeigen an der Kasse</div>` : `<div class="hint">Kein Popcorn bestellt – kein Abholbeleg.</div>`;
+    h = `<div class="card"><h2>6 · Kinokarten drucken &amp; Abholbeleg </h2>
+      ${karten}
+      <h2 style="margin-top:12px">Abholbeleg <span class="neu">neu</span></h2>
+      ${beleg}
+      ${s.popcorn.length ? `<h2 style="margin-top:12px">Kasse (simuliert) ${q("O9")}</h2>${qbox(["O9"])}<label>Beleg wird vorgezeigt am</label><select id="scantag"><option value="heute">Vorstellungstag</option><option value="anders">anderem Tag</option></select><div class="row"><button data-act="scan">Beleg scannen</button></div><div class="err" style="color:${s.scanOk ? "var(--ok)" : "var(--acc)"}">${s.scanMsg}</div>` : ""}
+      <div class="row"><button class="primary" data-act="restart">Neuer Kauf</button></div></div>`;
+  }
+  v.innerHTML = h;
+  document.getElementById("alleq").innerHTML = Object.entries(OPEN).map(([k,t]) => `<p><b>${k}:</b> ${t}</p>`).join("");
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.q) { document.getElementById("box-" + t.dataset.q)?.classList.toggle("show"); return; }
+  if (t.id === "restart" || t.dataset.act === "restart") { s = init(); render(); return; }
+  if (t.dataset.del !== undefined) { s.popcorn.splice(+t.dataset.del, 1); s.fehler = ""; render(); return; }
+  const a = t.dataset.act;
+  if (!a) return;
+  if (a === "back") { s.step--; s.fehler = ""; render(); }
+  else if (a === "next") { grab(); s.step++; s.fehler = ""; render(); }
+  else if (a === "add") {
+    const menge = parseInt(document.getElementById("pm").value, 10);
+    if (!(menge >= 1)) { s.fehler = "Bitte eine Menge von mindestens 1 angeben."; render(); return; }
+    if (popcornMenge() + menge > MAX) { s.fehler = `Höchstens ${MAX} Portionen insgesamt (schon ${popcornMenge()} gewählt).`; render(); return; }
+    s.popcorn.push({ groesse: document.getElementById("pg").value, geschmack: document.getElementById("pgs").value, menge });
+    s.fehler = ""; render();
+  }
+  else if (a === "scan") {
+    const tag = document.getElementById("scantag").value;
+    if (tag === "anders") { s.scanOk = false; s.scanMsg = "Abgelehnt: Beleg gilt nur am Vorstellungstag."; }
+    else if (s.eingeloest) { s.scanOk = false; s.scanMsg = "Abgelehnt: Beleg wurde bereits eingelöst."; }
+    else { s.eingeloest = true; s.scanOk = true; s.scanMsg = "Beleg gültig – Popcorn ausgeben. Beleg ist jetzt entwertet."; }
+    render();
+  }
+  else if (a === "pay") { s.step = 5; s.fehler = ""; render(); }
+  else if (a === "reject") { s.anlauf++; s.fehler = "Zahlung abgelehnt. Neuer Anlauf unter derselben Auftragsnummer; Karten und Popcorn bleiben unverändert."; render(); }
+});
+function grab() {
+  const g = id => document.getElementById(id);
+  if (s.step === 0) s.kategorie = g("kat").value;
+  if (s.step === 1) s.anzahl = Math.min(8, Math.max(1, parseInt(g("anz").value, 10) || 1));
+  if (s.step === 2) s.platz = g("platz").value;
+}
+document.getElementById("qtoggle").addEventListener("change", e => document.body.classList.toggle("hidequ", !e.target.checked));
+render();
+</script>
+</body>
+</html>

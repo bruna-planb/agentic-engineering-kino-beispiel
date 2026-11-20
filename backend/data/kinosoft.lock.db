@@ -1,6 +1,0 @@
-#FileLock
-#Thu Nov 19 11:55:21 CET 2026
-hostName=10.1.32.1
-id=1a1f37256517a2e1987bbf00c11e9793787e8ca7b36
-method=file
-server=10.1.32.1\:56079

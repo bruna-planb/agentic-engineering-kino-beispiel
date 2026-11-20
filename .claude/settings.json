@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/*secret*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/*secret*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && QG_NAME='Architekturtests' QG_PATHS='backend/src backend/pom.xml' QG_COMMAND='cd backend && ./mvnw -q test -Dtest=ArchitectureTest,ModularityTest' sh .agents/hooks/quality-gate.sh",
+            "timeout": 300
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && QG_NAME='Backend-Unit-Tests' QG_PATHS='backend/src backend/pom.xml' QG_COMMAND='cd backend && ./mvnw -q test' sh .agents/hooks/quality-gate.sh",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}
