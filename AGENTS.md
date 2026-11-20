@@ -30,4 +30,4 @@ Starten laut README.md, nicht selbst ausgeführt: `cd backend && ./mvnw spring-b
 - Umlaute in Bezeichnern als ae/oe/ue: `Saele`, `Verkaufsvorgaenge`, `ZusammenhaengendePlaetze` (Dateinamen unter `kino/kartenverkauf/`)
 
 ## Arbeitsweise
-- Features und Änderungen am Code werden im dafür angelegten Git-Worktree auf eigenem Branch entwickelt (Schulung: `../kino-uebung2`, Branch `uebung2`, siehe `docs/Uebungen/`), nie direkt im Haupt-Repo auf `main`. Ist kein Worktree vorhanden oder unklar, welcher gilt, wird vor der ersten Änderung nachgefragt. Auch Subagenten arbeiten dort.
+- Features und Änderungen am Code werden im dafür angelegten Git-Worktree auf eigenem Branch entwickelt (Schulung: der Worktree, den die jeweilige Übung in `docs/Uebungen/UebungN.md` anlegt, z. B. Ü2 `../kino-uebung2`/`uebung2`, Ü4 `../kino-popcorn`/`popcorn`), nie direkt im Haupt-Repo auf `main`. Ist kein Worktree vorhanden oder unklar, welcher gilt, wird vor der ersten Änderung nachgefragt. Auch Subagenten arbeiten dort.

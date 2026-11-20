@@ -241,5 +241,3 @@ infrastructure/k8s/image-pull-secret.yml
 *.trace.db
 logs/
 .env
-
-.env
